@@ -1,0 +1,3 @@
+# Ignore client and server folders
+client/
+server/
