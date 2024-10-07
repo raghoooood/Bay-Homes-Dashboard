@@ -1,3 +1,2 @@
-# Ignore client and server folders
-client/
-server/
+# Ignore other files if needed
+node_modules/
