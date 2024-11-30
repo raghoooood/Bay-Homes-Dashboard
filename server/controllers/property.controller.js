@@ -163,85 +163,7 @@ const createProperty = async (req, res) => {
   }
 };
 
-/* const updateProperty = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { 
-      title,
-      description,
-      propertyType,
-      location,
-      price,
-      propImages,
-      backgroundImage,
-      email,
-      numOfbathrooms,
-      numOfrooms,
-      size,
-      features,
-      permitNo,
-      areaName,
-      purpose,
-      furnishingType,
-      classification,
-      featured,
-      projectName,
-      barcode,
-    } = req.body;
-      if (!propImages || !Array.isArray(propImages)) {
-        throw new Error("Images must be an array");
-      }
-  
-      // Upload all photos to Cloudinary
-      const uploadedImages = await Promise.all(
-        propImages.map(image => cloudinary.uploader.upload(image))
-      );
-  
-      // Extract URLs from the uploaded photos
-      const imageUrls = uploadedImages.map(image => image.url);
 
-       // Upload a single photo to Cloudinary
-       const uploadedImage = await cloudinary.uploader.upload(barcode);
-  
-       // Extract the URL from the uploaded photo
-       const imageUrl = uploadedImage.url;
-
-        // Upload bacground images to Cloudinary
-        const uploadedBackImage = await cloudinary.uploader.upload(backgroundImage);
-        
-        const backImageUrl = uploadedBackImage.url;
-
-    await Property.findByIdAndUpdate(
-      { _id: id },
-      {
-        title,
-        description,
-        propertyType,
-        location,
-        price,
-        images:{
-          propImages: imageUrls,
-          backgroundImage: backImageUrl,
-        }, // Store the array of URLs directly
-        numOfbathrooms,
-        numOfrooms,
-        size,
-        features,
-        permitNo,
-        purpose,
-        furnishingType,
-        classification,
-        featured,
-        projectName,
-        barcode: imageUrl,
-     },
-    );
-
-    res.status(200).json({ message: "Property updated successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-}; */
 
 const updateProperty = async (req, res) => {
   try {
@@ -267,6 +189,7 @@ const updateProperty = async (req, res) => {
       featured,
       projectName,
       barcode,
+      status,
     } = req.body;
 
     // Fetch the existing property
@@ -275,6 +198,22 @@ const updateProperty = async (req, res) => {
     if (!existingProperty) {
       return res.status(404).json({ message: "Property not found" });
     }
+
+    // If status is provided, handle archiving logic
+    if (status !== undefined) {
+      const updatedProperty = await Property.findByIdAndUpdate(
+        id,
+        { status },
+        { new: true }
+      );
+      return res.status(200).json({
+        success: true,
+        message: `Property status updated to ${status}`,
+        data: updatedProperty,
+      });
+    }
+    const areana = await Area.findOne({ areaName }).session(session);
+
 
     // Handle propImages update
     let imageUrls = [];
@@ -325,6 +264,7 @@ const updateProperty = async (req, res) => {
         featured,
         projectName,
         barcode: imageUrl || existingProperty.barcode,
+        areaName: areana._id,
       },
       { new: true }
     );
@@ -352,43 +292,6 @@ const getPublicIdFromUrl = (url) => {
 };
 
 
-/* const deleteProperty = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Find the property to delete and populate the creator
-    const propertyToDelete = await Property.findById(id).populate("creator");
-    if (!propertyToDelete) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-
-    // Start a session and transaction
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-      // Remove the property and update the creator's allProperties
-      await propertyToDelete.remove({ session });
-      propertyToDelete.creator.allProperties.pull(propertyToDelete);
-      await propertyToDelete.creator.save({ session });
-
-      // Commit the transaction
-      await session.commitTransaction();
-      session.endSession();
-
-      // Respond with success
-      res.status(200).json({ message: "Property deleted successfully" });
-    } catch (transactionError) {
-      // Abort the transaction on error
-      await session.abortTransaction();
-      session.endSession();
-      throw transactionError;
-    }
-  } catch (error) {
-    // Catch any other errors and respond with the error message
-    res.status(500).json({ message: error.message });
-  }
-}; */
 
 const deleteProperty = async (req, res) => {
   try {
